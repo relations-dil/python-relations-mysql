@@ -7,7 +7,7 @@ with open("README.md", "r") as readme_file:
 
 setup(
     name="relations-mysql",
-    version="0.6.3",
+    version="0.6.4",
     package_dir = {'': 'lib'},
     py_modules = [
         'relations_mysql',
@@ -23,7 +23,7 @@ setup(
         'relations_mysql.table'
     ],
     install_requires=[
-        'relations-sql>=0.6.7'
+        'relations-sql>=0.6.8'
     ],
     url="https://github.com/relations-dil/python-relations-mysql",
     author="Gaffer Fitch",
