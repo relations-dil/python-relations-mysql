@@ -5,6 +5,15 @@ All notable changes to python-relations-mysql are recorded here, newest first. F
 
 ## [Unreleased]
 
+### Added
+- `make help` lists every target with what it does (each target has a `## description` after it), and is what a bare `make` runs.
+- Release tooling, the same as relations-dil's (relations-dil/python-relations#77): `make new` starts a release, `make version` sets the version, `make release-check` says where a release is up to and what would stop it, `make release` does what's left (checks, TestPyPI and a clean install from it, PyPI, the tag), `make dist-check` builds and checks the distributions, and `make test-release` tests the scripts against a throwaway repo and fake indexes. The work is in `scripts/`.
+- A `VERSION` file as the one place the version is set: the `Makefile` reads it and mounts it, `testpypi` and `pypi` pass it as `BUILD_VERSION`, and `setup.py` reads `BUILD_VERSION` or the file.
+
+### Changed
+- Every `docker run` in the `Makefile` uses `--rm`, and a replaced database container is removed with its volume (`docker rm --force -v`), so builds and test runs leave no stopped containers or volumes behind.
+- `testpypi` and `pypi` run in the current `python` image with `build` and `twine` installed on the fly, so the custom `gaf3/pypi` image is no longer used.
+
 ## [0.6.4] - 2026-06-06
 
 - Bumped the `relations-sql` requirement to 0.6.8 and `relations-dil` to 0.6.14, supporting stores for many-to-many relations.
