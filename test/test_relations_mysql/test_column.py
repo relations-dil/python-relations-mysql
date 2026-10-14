@@ -15,7 +15,7 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(field.define())
         self.assertEqual(ddl.migration["default"], 1)
 
-    def test_generate_string_key(self):
+    def test_create(self):
 
         # a string key is compared as bytes, MySQL's default collation would fold case and accents
 
@@ -52,7 +52,7 @@ class TestCOLUMN(unittest.TestCase):
         ddl.generate()
         self.assertEqual(ddl.sql, "`id` BIGINT AUTO_INCREMENT")
 
-    def test_modify_string_key(self):
+    def test_modify(self):
 
         # int to string drops the auto increment, whether or not the migration says so
 
