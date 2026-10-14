@@ -15,6 +15,78 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(field.define())
         self.assertEqual(ddl.migration["default"], 1)
 
+    def test_create(self):
+
+        # a string key is compared as bytes, MySQL's default collation would fold case and accents
+
+        field = relations.Field(str, name="id", readonly=True, none=False)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`id` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL")
+        self.assertEqual(ddl.args, [])
+
+        ddl = COLUMN(field.define(), added=True)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "ADD `id` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL")
+        self.assertEqual(ddl.args, [])
+
+        # only a readonly string
+
+        field = relations.Field(str, name="name", none=False)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`name` VARCHAR(255) NOT NULL")
+
+        field = relations.Field(int, name="count", readonly=True)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`count` BIGINT")
+
+        field = relations.Field(str, name="id", readonly=True, auto=True)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`id` BIGINT AUTO_INCREMENT")
+
+    def test_modify(self):
+
+        # int to string drops the auto increment, whether or not the migration says so
+
+        definition = relations.Field(int, name="id", auto=True).define()
+
+        ddl = COLUMN(migration={"kind": "str"}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `id` VARCHAR(255)")
+        self.assertEqual(ddl.args, [])
+
+        ddl = COLUMN(migration={"kind": "str", "auto": False, "none": False, "readonly": True}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `id` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL")
+
+        # a readonly string changing something else keeps its collation
+
+        definition = relations.Field(str, name="id", readonly=True, none=False).define()
+
+        ddl = COLUMN(migration={"store": "_id"}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `_id` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL")
+
+        # int stays auto
+
+        definition = relations.Field(int, name="id", auto=True).define()
+
+        ddl = COLUMN(migration={"none": False}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `id` BIGINT AUTO_INCREMENT")
+
     def test_generate(self):
 
         field = relations.Field(bool, name="flag")

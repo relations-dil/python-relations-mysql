@@ -14,6 +14,12 @@ All notable changes to python-relations-mysql are recorded here, newest first. F
 - Every `docker run` in the `Makefile` uses `--rm`, and a replaced database container is removed with its volume (`docker rm --force -v`), so builds and test runs leave no stopped containers or volumes behind.
 - `testpypi` and `pypi` run in the current `python` image with `build` and `twine` installed on the fly, so the custom `gaf3/pypi` image is no longer used.
 
+## [0.6.5] - 2026-10-14
+
+### Fixed
+- A readonly string column, the key for a string id (relations-dil 0.6.18), is created with `COLLATE utf8mb4_bin` so it is compared as bytes. MySQL's default collation folds case and accents, so `abc` and `ABC` were the same key and the second was refused, unlike every other source.
+- Changing a column from int to another kind drops its `AUTO_INCREMENT`, whether or not the migration says `auto` is gone, and a readonly string gets the same collation.
+
 ## [0.6.4] - 2026-06-06
 
 - Bumped the `relations-sql` requirement to 0.6.8 and `relations-dil` to 0.6.14, supporting stores for many-to-many relations.
