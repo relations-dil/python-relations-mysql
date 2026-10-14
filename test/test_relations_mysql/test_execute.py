@@ -62,6 +62,74 @@ class TestExecute(unittest.TestCase):
                 except:
                     self.fail(statement)
 
+    def insert(self, table, **values):
+
+        query = INSERT(table).VALUES(**values)
+        query.generate()
+        self.connection.cursor().execute(query.sql, query.args)
+
+    def test_execute_string_key(self):
+
+        class Slug(relations.Model):
+
+            SCHEMA = "unit"
+
+            id = str
+            name = str
+
+        ddl = TABLE(Slug.thy().define())
+        ddl.generate(indent=2)
+        self.execute(ddl.sql)
+
+        # ids that differ only by case are different ids, and a repeat is refused
+
+        self.insert("unit.slug", id="abc.pet.main.unum", name="lower")
+        self.insert("unit.slug", id="ABC.PET.MAIN.UNUM", name="upper")
+
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT `id` FROM `unit`.`slug` ORDER BY `id`")
+        self.assertEqual([row["id"] for row in cursor.fetchall()], ["ABC.PET.MAIN.UNUM", "abc.pet.main.unum"])
+
+        cursor.execute("SELECT `name` FROM `unit`.`slug` WHERE `id` = 'abc.pet.main.unum'")
+        self.assertEqual([row["name"] for row in cursor.fetchall()], ["lower"])
+
+        self.assertRaises(pymysql.err.IntegrityError, self.insert, "unit.slug", id="abc.pet.main.unum", name="again")
+
+    def test_execute_string_key_migration(self):
+
+        class Num(relations.Model):
+
+            SCHEMA = "unit"
+
+            id = int, {"auto": True}
+            name = str
+
+        ddl = TABLE(Num.thy().define())
+        ddl.generate(indent=2)
+        self.execute(ddl.sql)
+
+        self.insert("unit.num", name="one")
+
+        # int to string, with the auto increment and the case folding gone
+
+        ddl = TABLE(
+            migration={"fields": {"change": {"id": {"kind": "str", "auto": False, "none": False, "readonly": True}}}},
+            definition=Num.thy().define()
+        )
+        ddl.generate(indent=2)
+        self.execute(ddl.sql)
+
+        self.insert("unit.num", id="abc", name="lower")
+        self.insert("unit.num", id="ABC", name="upper")
+
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT `id` FROM `unit`.`num` ORDER BY `id`")
+        self.assertEqual([row["id"] for row in cursor.fetchall()], ["1", "ABC", "abc"])
+
+        # no default, so an insert without an id is refused
+
+        self.assertRaises(pymysql.err.OperationalError, self.insert, "unit.num", name="none")
+
     def test_execute(self):
 
         class Meta(relations.Model):

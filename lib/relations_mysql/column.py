@@ -26,6 +26,7 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
 
     AUTO = """BIGINT AUTO_INCREMENT"""
     EXTRACT = """AS (%s)"""
+    BINARY = """COLLATE utf8mb4_bin"""
 
     def __init__(self, migration=None, definition=None, added=False, **kwargs):
 
@@ -33,6 +34,18 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
 
         if self.migration and self.migration.get("kind") == "bool" and "default" in self.migration:
             self.migration["default"] = int(self.migration["default"])
+
+    def create(self, **kwargs):
+        """
+        CREATE DLL, a readonly string (a key) compared as bytes, the default collation folds case and accents
+        """
+
+        super().create(**kwargs)
+
+        migration = self.migration
+
+        if migration.get("kind") == "str" and migration.get("readonly") and not migration.get("auto") and "__" not in migration["store"]:
+            self.sql = self.sql.replace(self.KINDS["str"], f"{self.KINDS['str']} {self.BINARY}", 1)
 
     def modify(self, **kwargs): # pylint: disable=arguments-differ
         """
@@ -43,7 +56,8 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
 
         kind = self.migration.get("kind", self.definition["kind"])
         store = self.migration.get("store", self.definition["store"])
-        auto = self.migration.get("auto", self.definition.get("auto"))
+        auto = self.migration.get("auto", self.definition.get("auto")) and kind == "int"
+        readonly = self.migration.get("readonly", self.definition.get("readonly"))
         none = self.migration.get("none", self.definition.get("none"))
         default = self.migration.get("default", self.definition.get("default"))
 
@@ -60,6 +74,9 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
             else:
 
                 sql.append(self.KINDS.get(kind, self.KINDS["json"]))
+
+                if kind == "str" and readonly:
+                    sql.append(self.BINARY)
 
                 if not none:
                     sql.append("NOT NULL")
