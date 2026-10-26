@@ -20,6 +20,7 @@ All notable changes to python-relations-mysql are recorded here, newest first. F
 
 ### Fixed
 - A string column is `VARCHAR(length)` when its field has a `length`, instead of always `VARCHAR(255)`, so composite keys can fit under InnoDB's 3072 byte limit. Without a length it is still `VARCHAR(255)` (relations-dil/python-relations-mysql#17).
+- Requires relations-sql 0.6.11, so changing only a column's `length` on an existing table generates the `ALTER`.
 
 ## [0.6.5] - 2026-10-14
 
