@@ -16,6 +16,9 @@ All notable changes to python-relations-mysql are recorded here, newest first. F
 - Every `docker run` in the `Makefile` uses `--rm`, and a replaced database container is removed with its volume (`docker rm --force -v`), so builds and test runs leave no stopped containers or volumes behind.
 - `testpypi` and `pypi` run in the current `python` image with `build` and `twine` installed on the fly, so the custom `gaf3/pypi` image is no longer used.
 
+### Fixed
+- A string column is `VARCHAR(length)` when its field has a `length`, instead of always `VARCHAR(255)`, so composite keys can fit under InnoDB's 3072 byte limit. Without a length it is still `VARCHAR(255)` (relations-dil/python-relations-mysql#17).
+
 ## [0.6.5] - 2026-10-14
 
 ### Fixed
