@@ -40,6 +40,25 @@ class TestCOLUMN(unittest.TestCase):
         ddl.generate()
         self.assertEqual(ddl.sql, "`name` VARCHAR(255) NOT NULL")
 
+        # a string is as long as its length says, 255 when it doesn't say
+
+        field = relations.Field(str, name="name", none=False, length=64)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`name` VARCHAR(64) NOT NULL")
+
+        ddl = COLUMN(field.define(), added=True)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "ADD `name` VARCHAR(64) NOT NULL")
+
+        field = relations.Field(str, name="id", readonly=True, none=False, length=64)
+        ddl = COLUMN(field.define())
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "`id` VARCHAR(64) COLLATE utf8mb4_bin NOT NULL")
+
         field = relations.Field(int, name="count", readonly=True)
         ddl = COLUMN(field.define())
 
@@ -77,6 +96,29 @@ class TestCOLUMN(unittest.TestCase):
 
         ddl.generate()
         self.assertEqual(ddl.sql, "CHANGE `id` `_id` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL")
+
+        # a string keeps its length, or takes the one it's changing to
+
+        definition = relations.Field(str, name="id", readonly=True, none=False, length=64).define()
+
+        ddl = COLUMN(migration={"store": "_id"}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `_id` VARCHAR(64) COLLATE utf8mb4_bin NOT NULL")
+
+        ddl = COLUMN(migration={"length": 32}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `id` VARCHAR(32) COLLATE utf8mb4_bin NOT NULL")
+
+        # int to string takes the length of the migration
+
+        definition = relations.Field(int, name="id", auto=True).define()
+
+        ddl = COLUMN(migration={"kind": "str", "length": 64}, definition=definition)
+
+        ddl.generate()
+        self.assertEqual(ddl.sql, "CHANGE `id` `id` VARCHAR(64)")
 
         # int stays auto
 

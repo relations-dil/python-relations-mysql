@@ -35,17 +35,32 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
         if self.migration and self.migration.get("kind") == "bool" and "default" in self.migration:
             self.migration["default"] = int(self.migration["default"])
 
+    @staticmethod
+    def varchar(length):
+        """
+        The string kind, as long as the length says, the default when there isn't one
+        """
+
+        return f"VARCHAR({length})" if length else COLUMN.KINDS["str"]
+
     def create(self, **kwargs):
         """
-        CREATE DLL, a readonly string (a key) compared as bytes, the default collation folds case and accents
+        CREATE DLL, a string as long as its length says, a readonly one (a key) compared as bytes, the default
+        collation folds case and accents
         """
 
         super().create(**kwargs)
 
         migration = self.migration
 
-        if migration.get("kind") == "str" and migration.get("readonly") and not migration.get("auto") and "__" not in migration["store"]:
-            self.sql = self.sql.replace(self.KINDS["str"], f"{self.KINDS['str']} {self.BINARY}", 1)
+        if migration.get("kind") == "str" and not migration.get("auto") and "__" not in migration["store"]:
+
+            kind = self.varchar(migration.get("length"))
+
+            if migration.get("readonly"):
+                kind = f"{kind} {self.BINARY}"
+
+            self.sql = self.sql.replace(self.KINDS["str"], kind, 1)
 
     def modify(self, **kwargs): # pylint: disable=arguments-differ
         """
@@ -73,7 +88,10 @@ class COLUMN(relations_mysql.DDL, relations_sql.COLUMN):
 
             else:
 
-                sql.append(self.KINDS.get(kind, self.KINDS["json"]))
+                if kind == "str":
+                    sql.append(self.varchar(self.migration.get("length", self.definition.get("length"))))
+                else:
+                    sql.append(self.KINDS.get(kind, self.KINDS["json"]))
 
                 if kind == "str" and readonly:
                     sql.append(self.BINARY)
