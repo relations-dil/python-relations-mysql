@@ -5,6 +5,8 @@ All notable changes to python-relations-mysql are recorded here, newest first. F
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-10-26
+
 ### Added
 - Jenkins releases on a merge to `main`: a `release` stage (only on `main`) runs `make release`, which does nothing for a version that is already released and otherwise does the test release, the release and the tag. It pushes the tag with the `github` credential, as Leroy Jenkins, one build at a time, with a two hour timeout (relations-dil/python-relations#80). The package builds run in a copy with only the files they use mounted read-only, so nothing root-owned is left in the workspace, and `make tag` stops on a failure instead of ignoring it. The release scripts work with the older git on the Jenkins host.
 - `make help` lists every target with what it does (each target has a `## description` after it), and is what a bare `make` runs.
